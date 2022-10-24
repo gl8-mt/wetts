@@ -17,12 +17,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from transformers import AutoModel
+from common import BERT_PRETRAIN_MODEL
 
 
 class FrontendModel(nn.Module):
     def __init__(self, num_phones: int, num_prosody: int):
         super(FrontendModel, self).__init__()
-        self.bert = AutoModel.from_pretrained('bert-base-chinese')
+        self.bert = AutoModel.from_pretrained(BERT_PRETRAIN_MODEL)
         for param in self.bert.parameters():
             param.requires_grad_(False)
         self.transform = nn.TransformerEncoderLayer(d_model=768,

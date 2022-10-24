@@ -18,6 +18,7 @@ import sys
 
 
 from transformers import AutoTokenizer
+from common import BERT_PRETRAIN_MODEL
 
 from hanzi2pinyin import Hanzi2Pinyin
 from tn.chinese.normalizer import Normalizer
@@ -30,7 +31,7 @@ except ImportError:
     print('Please install onnxruntime!')
     sys.exit(1)
 
-tokenizer = AutoTokenizer.from_pretrained("bert-base-chinese")
+tokenizer = AutoTokenizer.from_pretrained(BERT_PRETRAIN_MODEL)
 
 def get_args():
     parser = argparse.ArgumentParser(description='training your network')
@@ -59,7 +60,12 @@ class Frontend(object):
         polyphone_character_file: str,
     ):
         self.hanzi2pinyin = Hanzi2Pinyin(hanzi2pinyin_file)
-        self.ppm_sess = ort.InferenceSession(polyphone_prosody_model)
+        self.ppm_sess = ort.InferenceSession(polyphone_prosody_model,
+                                             providers=[
+                                                 # 'TensorrtExecutionProvider',
+                                                 # 'CUDAExecutionProvider',
+                                                 'CPUExecutionProvider'
+                                             ])
         self.tn = Normalizer()
         self.t2s = T2S(trad2simple_file)
         self.polyphone_phone_dict = []
@@ -78,6 +84,8 @@ class Frontend(object):
         x = self.tn.normalize(x)
         # hanzi2pinyin
         pinyin = self.hanzi2pinyin.convert(x)
+        # print(f'x: {x}')
+        # print(f'pinyin: {pinyin}')
         # polyphone disambiguation & prosody prediction
         tokens = tokenizer(list(x),
                            is_split_into_words=True,
@@ -87,24 +95,33 @@ class Frontend(object):
         polyphone_pred = ort_outs[0].argmax(-1)[0][1:-1]
         prosody_pred = ort_outs[1].argmax(-1)[0][1:-1]
         index = 0
-        for char in x:
-            if char in self.polyphone_character_dict:
-                pinyin[index] = self.polyphone_phone_dict[polyphone_pred[index]]
-            index += 1
-        return pinyin, prosody_pred
+        # for char in x:
+        #     if char in self.polyphone_character_dict:
+        #         pinyin[index] = self.polyphone_phone_dict[polyphone_pred[index]]
+        #     index += 1
+        # return pinyin, prosody_pred
+        return pinyin, prosody_pred, x
 
 def main():
     args = get_args()
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-
 
     frontend = Frontend(args.hanzi2pinyin_file,
                         args.trad2simple_file,
                         args.polyphone_prosody_model,
                         args.polyphone_phone_file,
                         args.polyphone_character_file)
-    pinyin, prosody = frontend.g2p(args.text)
+    # import time
+    # t0 = time.time()
+
+    # pinyin, prosody = frontend.g2p(args.text)
+    pinyin, prosody = frontend.g2p(args.text)[:2]
+
+    # et = time.time() - t0
+    # print("inference elapse: {}".format(et))
     print("text: {} \npinyin {} \nprosody {}".format(
           args.text, pinyin, prosody))
+
+
 if __name__ == '__main__':
     main()

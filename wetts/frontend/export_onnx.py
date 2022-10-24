@@ -76,7 +76,12 @@ def main():
 
     # Verify onnx precision
     torch_output = model(dummy_input)
-    ort_sess = ort.InferenceSession(args.onnx_model)
+    ort_sess = ort.InferenceSession(args.onnx_model,
+                                    providers=[
+                                    # 'TensorrtExecutionProvider',
+                                    # 'CUDAExecutionProvider',
+                                    'CPUExecutionProvider'
+                                   ])
     onnx_output = ort_sess.run(None, {'input': dummy_input.numpy()})
     print(torch_output[1])
     print(onnx_output[1])

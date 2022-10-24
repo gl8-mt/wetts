@@ -16,11 +16,12 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers import AutoTokenizer
+from common import BERT_PRETRAIN_MODEL
 
 
 IGNORE_ID = -100
 
-tokenizer = AutoTokenizer.from_pretrained("bert-base-chinese")
+tokenizer = AutoTokenizer.from_pretrained(BERT_PRETRAIN_MODEL)
 
 
 class FrontendDataset(Dataset):
