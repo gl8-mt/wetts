@@ -26,12 +26,14 @@ class FrontendModel(nn.Module):
         self.bert = AutoModel.from_pretrained(BERT_PRETRAIN_MODEL)
         for param in self.bert.parameters():
             param.requires_grad_(False)
-        self.transform = nn.TransformerEncoderLayer(d_model=768,
+        d_model = self.bert.config.to_dict()['hidden_size']
+        assert d_model in (768, 1024), 'Expected bert encoder input dim is 768 or 1024'
+        self.transform = nn.TransformerEncoderLayer(d_model=d_model,
                                                     nhead=8,
                                                     dim_feedforward=2048,
                                                     batch_first=True)
-        self.phone_classifier = nn.Linear(768, num_phones)
-        self.prosody_classifier = nn.Linear(768, num_prosody)
+        self.phone_classifier = nn.Linear(d_model, num_phones)
+        self.prosody_classifier = nn.Linear(d_model, num_prosody)
 
     def _forward(self, x):
         mask = x['attention_mask'] == 0

@@ -84,8 +84,8 @@ class Frontend(object):
         x = self.tn.normalize(x)
         # hanzi2pinyin
         pinyin = self.hanzi2pinyin.convert(x)
-        # print(f'x: {x}')
-        # print(f'pinyin: {pinyin}')
+        # print(f'x: {x}')    # str 汉字
+        # print(f'pinyin: {pinyin}')  # List[str]
         # polyphone disambiguation & prosody prediction
         tokens = tokenizer(list(x),
                            is_split_into_words=True,
