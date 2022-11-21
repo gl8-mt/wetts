@@ -17,7 +17,7 @@ from _my import rhy_postprocess as rhy
     ),
 	(
 		'法务 #2 制定的或审核过的订单模板 #2 不需要审核',
-		'法务制定的或审核过的订单模板 #2 不需要审核',
+		'法务制定的或审核过的订单模板不需要审核',
 		' #2 ',
 	)
 ])
@@ -33,3 +33,17 @@ def test_ignore_too_short_rank(text, expect, rank):
 ])
 def test_compress_too_close_rank(text, expect):
     assert rhy.compress_too_close_rank(text, ' #2 ') == expect
+
+
+@pytest.mark.parametrize('text,expect', [
+    (
+        '四、美智光电 #3 所在市场规模巨大',
+        '四、美智光电所在市场规模巨大',
+    ),
+    (
+        '唐剑说：“从前端算法、云平台、语音模组、自然语言理解算法 #2 等 #3 都是我们自研的。”',
+        '唐剑说：“从前端算法、云平台、语音模组、自然语言理解算法等 #3 都是我们自研的。”',
+    ),
+])
+def test_process_text(text, expect):
+    assert rhy.process_text(text) == expect

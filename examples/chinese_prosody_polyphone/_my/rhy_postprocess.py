@@ -17,8 +17,7 @@ Method:
 
 import logging
 import re
-# import sys
-# logging.basicConfig(level='DEBUG', stream=logging.StreamHandler())
+logging.basicConfig(level='DEBUG')
 
 
 def get_xml_break(sp):
@@ -39,7 +38,7 @@ def ignore_too_short_rank(text, rank, min_dist=6):
 			logging.info(f'ignore {rank} at the end of {text}')
 			lst[-2] = lst[-2] + lst[-1]
 			lst.pop(-1)
-	logging.debug(f'lst: {lst}')
+	logging.debug(f'too short lst: {lst}')
 	return rank.join(lst)
 
 
@@ -83,6 +82,7 @@ def adjust_prosody_v1(text, len_thresh=16, map_rank3='#3', map_rank2='#2', map_r
 
 	res_lst = []
 	for sub_text in lst:
+		sub_text = ignore_too_short_rank(sub_text, rank2, min_dist=6)  # avoid "理解算法 #2 等 #3 都是"
 		if len(sub_text) < len_thresh or rank2 not in sub_text:
 			new_sub_text = sub_text.replace(rank2, '')  # ignore
 		else:
@@ -112,13 +112,15 @@ def process_text(text):
 
 
 def split_sentences(line):
-	sub_sentence_lst = re.sub(f'([,.!?;；，。！？])', r'\1\n', line.strip()).split('\n')
+	sentence_sep = '-,.!?;:：；，。！？、《》——'
+	sub_sentence_lst = re.sub(rf'([{sentence_sep}])', r'\1\n', line.strip()).split('\n')
 	if '' in sub_sentence_lst:
 		sub_sentence_lst.remove('')
+	logging.debug(f'sub_sentence_lst: {sub_sentence_lst}')
 	return sub_sentence_lst
 
 
-def process_file(file, sep='|'):
+def process_file(file, sep=' '):
 	with open(file) as f:
 		for line in f:
 			if not line.strip():
@@ -126,7 +128,7 @@ def process_file(file, sep='|'):
 			if sep:
 				utt_id, text = line.strip().split(sep=sep, maxsplit=1)
 				r = process_text(text)
-				r = f'{utt_id}|{r}'
+				r = f'{utt_id}{sep}{r}'
 			else:
 				r = process_text(line)
 			print(r)
