@@ -170,6 +170,7 @@ def main():
     print(model)
     use_cuda = args.gpu >= 0 and torch.cuda.is_available()
     device = torch.device('cuda' if use_cuda else 'cpu')
+    print(f'use_cuda: {use_cuda}')
     model = model.to(device)
     optimizer = AdamW(model.parameters(), lr=args.lr)
     lr_scheduler = get_scheduler(

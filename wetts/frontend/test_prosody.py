@@ -89,6 +89,18 @@ def main():
                                 [1 if x > 2 else 0 for x in pred])
         print("pw f1_score {} pph f1_score {} iph f1_score {}".format(
             pw_f1_score, pph_f1_score, iph_f1_score))
+
+        label = [(x if x < 4 else 0) for x in label]
+        pred = [(x if x < 4 else 0) for x in pred]
+        pw_f1_score = f1_score([1 if x > 0 else 0 for x in label],
+                               [1 if x > 0 else 0 for x in pred])
+        pph_f1_score = f1_score([1 if x > 1 else 0 for x in label],
+                                [1 if x > 1 else 0 for x in pred])
+        iph_f1_score = f1_score([1 if x > 2 else 0 for x in label],
+                                [1 if x > 2 else 0 for x in pred])
+        print("(exclude #4) pw f1_score {} pph f1_score {} iph f1_score {}".format(
+            pw_f1_score, pph_f1_score, iph_f1_score))
+
         pbar.close()
 
 
