@@ -10,3 +10,7 @@ BERT_PRETRAIN_MODEL = 'bert-base-chinese'
 ## === MT ===
 #
 # BERT_PRETRAIN_MODEL = '/nfs1/nlp/models/MTBert_v0.0.1'
+# BERT_PRETRAIN_MODEL = '/nfs1/nlp/models/MTBert_v0.0.3'
+# BERT_PRETRAIN_MODEL = '/nfs1/nlp/models/deberta'
+# BERT_PRETRAIN_MODEL = '/nfs1/nlp/models/deberta-small'
+# BERT_PRETRAIN_MODEL = '/nfs1/nlp/models/deberta-xsmall'
