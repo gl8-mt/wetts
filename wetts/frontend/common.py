@@ -1,4 +1,4 @@
-BERT_PRETRAIN_MODEL = 'bert-base-chinese'
+# BERT_PRETRAIN_MODEL = 'bert-base-chinese'
 
 ## === 基于全词掩码（Whole Word Masking）技术的中文预训练模型BERT-wwm ===
 #
@@ -10,3 +10,4 @@ BERT_PRETRAIN_MODEL = 'bert-base-chinese'
 ## === MT ===
 #
 # BERT_PRETRAIN_MODEL = '/nfs1/nlp/models/MTBert_v0.0.1'
+BERT_PRETRAIN_MODEL = '/nfs1/nlp/models/MTBert_v0.0.3'

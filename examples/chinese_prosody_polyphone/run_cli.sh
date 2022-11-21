@@ -68,7 +68,7 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
     --prosody_dict local/prosody2id.txt \
     --test_data data/polyphone/test.txt \
     --batch_size 32 \
-    --checkpoint $dir/${num_epochs}.pt
+    --checkpoint $dir/${num_ckpt}.pt
 
   # Test prosody, metric: F1-score
   python wetts/frontend/test_prosody.py \
