@@ -23,8 +23,8 @@ from common import BERT_PRETRAIN_MODEL
 class FrontendModel(nn.Module):
     def __init__(self, num_phones: int, num_prosody: int):
         super(FrontendModel, self).__init__()
-        self.bert = AutoModel.from_pretrained(BERT_PRETRAIN_MODEL)
-        # self.bert = transformers.DebertaV2Model.from_pretrained(BERT_PRETRAIN_MODEL)
+        # self.bert = AutoModel.from_pretrained(BERT_PRETRAIN_MODEL)
+        self.bert = transformers.DebertaV2Model.from_pretrained(BERT_PRETRAIN_MODEL)
         for param in self.bert.parameters():
             param.requires_grad_(False)
         d_model = self.bert.config.to_dict()['hidden_size']
