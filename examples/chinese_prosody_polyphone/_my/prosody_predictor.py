@@ -7,7 +7,7 @@ import logging
 log = logging
 
 from wetts.frontend.g2p_prosody import Frontend
-from _my.rhy_postprocess import process_text
+from rhy_postprocess import process_text
 
 
 def _load_frontend_model(data_dir, model_path):
