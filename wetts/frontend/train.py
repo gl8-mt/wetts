@@ -26,6 +26,10 @@ from dataset import FrontendDataset, collote_fn, IGNORE_ID
 from model import FrontendModel
 from utils import read_table
 
+import wandb
+
+wandb.init(project="wetts-frontend", entity="gl8")
+
 
 def compute_accuracy(logits, target):
     pred = logits.argmax(-1)
@@ -88,6 +92,13 @@ def train_or_cv(model,
                 logstr += ' prosody_loss {:.6f} prosody_acc {:.6f}'.format(
                     prosody_loss, prosody_acc)
                 print(logstr)
+                wandb.log({
+                    "loss": loss.item(),
+                    "phone_loss": phone_loss,
+                    "phone_acc": phone_acc,
+                    "prosody_loss": prosody_loss,
+                    "prosody_acc": prosody_acc,
+                })
             sys.stdout.flush()
 
             if is_train:
@@ -96,6 +107,7 @@ def train_or_cv(model,
                 loss.backward()
                 optimizer.step()
                 lr_scheduler.step()
+                wandb.watch(model)
 
 
 def get_args():
@@ -152,6 +164,13 @@ def main():
     prosody_dict = read_table(args.prosody_dict)
     num_phones = len(phone_dict)
     num_prosody = len(prosody_dict)
+
+    # wandb.config = {
+    #     "learning_rate": args.learning_rate,
+    #     "epochs": args.num_epochs,
+    #     "batch_size": args.batch_size,
+    # }
+    wandb.config = vars(args)
 
     train_data = FrontendDataset(args.train_polyphone_data, phone_dict,
                                  args.train_prosody_data, prosody_dict)
