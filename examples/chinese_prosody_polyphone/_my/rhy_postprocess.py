@@ -17,7 +17,7 @@ Method:
 
 import logging
 import re
-logging.basicConfig(level='DEBUG')
+# logging.basicConfig(level='DEBUG')
 
 
 def get_xml_break(sp):
