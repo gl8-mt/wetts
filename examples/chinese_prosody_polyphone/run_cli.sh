@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Copyright 2022 Binbin Zhang(binbzha@qq.com)
 
-stage=-1
+stage=${6--1}
 stop_stage=100
 url=https://wetts-1256283475.cos.ap-shanghai.myqcloud.com/data/
 
