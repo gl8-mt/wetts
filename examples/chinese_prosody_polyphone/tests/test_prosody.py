@@ -98,6 +98,7 @@ def run_predict():
     30,
     50,
     100,
+    150,
     200,
 ])
 def test_predict_zh_prosody(text_len, benchmark):
