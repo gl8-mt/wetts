@@ -12,22 +12,20 @@ sys.path.insert(0, 'wetts/frontend')
 from wetts.frontend.g2p_prosody import Frontend
 
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 
-# text = "我是你的语音助理呀，人工智能美少女哦。"
-hanzi2pinyin_file = "local/pinyin_dict.txt"
-trad2simple_file = "local/traditional2simple.txt"
-polyphone_phone_file = "local/polyphone_phone.txt"
-polyphone_character_file = "local/polyphone_character.txt"
-# polyphone_prosody_model = "_backup/exp_v7/9.onnx"
-polyphone_prosody_model = "_backup/exp_v21/9.onnx"
-
-frontend = Frontend(hanzi2pinyin_file,
-                    trad2simple_file,
-                    polyphone_prosody_model,
-                    polyphone_phone_file,
-                    polyphone_character_file)
+def _load_frontend_model(data_dir, model_path):
+    hanzi2pinyin_file = f"{data_dir}/pinyin_dict.txt"
+    trad2simple_file = f"{data_dir}/traditional2simple.txt"
+    polyphone_phone_file = f"{data_dir}/polyphone_phone.txt"
+    polyphone_character_file = f"{data_dir}/polyphone_character.txt"
+    return Frontend(
+        hanzi2pinyin_file,
+        trad2simple_file,
+        model_path,
+        polyphone_phone_file,
+        polyphone_character_file)
 
 
 def compress_prosody_rank(prosody):
@@ -52,7 +50,10 @@ def compress_prosody_rank(prosody):
 
 
 def _predict_zh_prosody(text, use_pinyin=False, compress_rank=False):
-    pinyin, prosody, hanzi = frontend.g2p(text)
+    global g_frontend
+    if g_frontend is None:
+        g_frontend = _load_frontend_model(_data_dir, _polyphone_prosody_model)
+    pinyin, prosody, hanzi = g_frontend.g2p(text)
     log.debug('pinyin: %s', pinyin)
     log.debug('prosody: %s', prosody)
     log.debug('hanzi: %s', hanzi)
@@ -145,4 +146,7 @@ def g2p_for_tts(in_file, out_file=None, with_id=False, sep= ' '):
 
 if __name__ == '__main__':
     import fire
+    _data_dir='local'
+    _polyphone_prosody_model = "_backup/exp_v21/9.onnx"
+    g_frontend = None
     fire.Fire(g2p_for_tts)
