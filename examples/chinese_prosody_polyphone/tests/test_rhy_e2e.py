@@ -1,4 +1,3 @@
-import sys
 import pytest
 
 from _my import prosody_predictor as psp
@@ -44,3 +43,20 @@ def psp_model():
 ])
 def test_prosody_predictor(text, expect, use_sp, psp_model):
     assert psp_model.predict(text, use_sp=use_sp) == expect
+
+
+@pytest.mark.parametrize('text_len', [
+    5,
+    10,
+    20,
+    30,
+    50,
+    100,
+    150,
+    200,
+])
+def test_benchmark(text_len, benchmark, psp_model):
+    import faker
+    fake = faker.Faker('zh_CN')
+    text = fake.sentence(nb_words=text_len, variable_nb_words=True)[:text_len]
+    benchmark(psp_model.predict, text, use_sp=True)

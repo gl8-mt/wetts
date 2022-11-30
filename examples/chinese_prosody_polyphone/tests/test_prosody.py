@@ -14,7 +14,7 @@ from wetts.frontend.g2p_prosody import Frontend
 frontend_model = None
 
 
-def test_load_model(benchmark):
+def setup(benchmark):
     global frontend_model
     # text = "我是你的语音助理呀，人工智能美少女哦。"
     hanzi2pinyin_file = "local/pinyin_dict.txt"
@@ -104,3 +104,17 @@ def run_predict():
 def test_predict_zh_prosody(text_len, benchmark):
     text = text_generator(text_len)
     benchmark(_predict_zh_prosody, frontend_model, text)
+
+
+@pytest.mark.parametrize('text_len', [
+    5,
+    10,
+    30,
+    50,
+    100,
+    150,
+    200,
+])
+def test_frontend_g2p(text_len, benchmark):
+    text = text_generator(text_len)
+    benchmark(frontend_model.g2p, text)
