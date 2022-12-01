@@ -1,66 +1,21 @@
-import re
-import sys
-sys.path.insert(0, '.')
-sys.path.insert(0, 'wetts/frontend')
-
 import logging
-log = logging
 
-from wetts.frontend.g2p_prosody import Frontend
-from rhy_postprocess import process_text
+from transformers import AutoTokenizer
 
-
-def _load_frontend_model(data_dir, model_path):
-    hanzi2pinyin_file = f"{data_dir}/pinyin_dict.txt"
-    trad2simple_file = f"{data_dir}/traditional2simple.txt"
-    polyphone_phone_file = f"{data_dir}/polyphone_phone.txt"
-    polyphone_character_file = f"{data_dir}/polyphone_character.txt"
-    return Frontend(
-        hanzi2pinyin_file,
-        trad2simple_file,
-        model_path,
-        polyphone_phone_file,
-        polyphone_character_file)
+from . import rhy_postprocess
 
 
-def _compress_prosody_rank(prosody):
-    """
-    Combine consecutive prosody ranks):
-
-    ---
-    org=[0 1 3 1 1 0 1 0 1 0 4]
-    new=[0 0 0 0 3 0 1 0 1 0 4]
-    """
-    # 合并连续的 sp 预测结果
-    prosody_org = prosody.copy()
-    for i, rhy in enumerate(prosody[1:], start=1):
-        if rhy != 0 and prosody[i-1] != 0:
-            if rhy < prosody[i-1]:
-                prosody[i] = prosody[i-1]  # 保留较大的韵律停顿
-            prosody[i-1] = 0  # 前一个reset成0
-    if any(prosody_org != prosody):
-        log.warning('modified prosody (combine consecutive prosody ranks):'
-            ' org=%s new=%s', prosody_org, prosody)
-    return prosody
+try:
+    import onnxruntime as ort
+except ImportError:
+    print('Please install onnxruntime!')
+    sys.exit(1)
 
 
-def _predict_zh_prosody(frontend, text, use_pinyin=False, compress_rank=False):
-    pinyin, prosody, hanzi = frontend.g2p(text)
-    log.debug('pinyin: %s', pinyin)
-    log.debug('prosody: %s', prosody)
-    log.debug('hanzi: %s', hanzi)
 
-    if compress_rank:
-        prosody = _compress_prosody_rank(prosody)
-
-    if use_pinyin:
-        symbols = pinyin
-    else:
-        # symbols = re.sub(r'\W', '', hanzi)
-        symbols = hanzi
-
+def _add_prosody_into_text(text, prosody):
     lst = []
-    for ph, rhy in zip(symbols, prosody):
+    for ph, rhy in zip(text, prosody):
         if ph != 'UNK':
             lst.append(ph)
         if rhy == 4:
@@ -69,23 +24,46 @@ def _predict_zh_prosody(frontend, text, use_pinyin=False, compress_rank=False):
             # lst.append('sp' + str(rhy))
             lst.append(f' #{rhy} ')
     return lst
+    
+
+
+def _predict_zh_prosody(frontend, text, use_pinyin=False):
+    pinyin, prosody, hanzi = frontend.g2p(text)
+    logging.debug('pinyin: %s', pinyin)
+    logging.debug('prosody: %s', prosody)
+    logging.debug('hanzi: %s', hanzi)
+
+    if use_pinyin:
+        symbols = pinyin
+    else:
+        # symbols = re.sub(r'\W', '', hanzi)
+        symbols = hanzi
+
+    return _add_prosody_into_text(symbols, prosody)
+
 
 
 def _predict_prosody(frontend, text, use_pinyin=False):
-    # segment_lst = re.sub(r'([\Wa-zA-Z\s]+)', r'_\1_', text).split('_')
-    sentence_sep = r'\Wa-zA-Z0-9\s'
-    # sentence_sep = ',!?;:：；，。！？、《》“”——……（）'
-    segment_lst = re.sub(rf'([{sentence_sep}]+)', r'_\1_', text).split('_')
-    # print('segment_lst:', segment_lst)
+
+    def _split_zsh_sentence(text):
+        sentence_sep = r'\Wa-zA-Z0-9\s'
+        segment_lst = re.sub(rf'([{sentence_sep}]+)', r'_\1_', text).split('_')
+        return segment_lst
+
+    segment_lst = _split_sentence(text)
+    if len(segment_lst) > 1:
+        logging.info('split sentence segment list: %s', segment_lst)
 
     lst = []
     for seg in segment_lst:
         if not seg:
             continue
-        if re.search(rf'([{sentence_sep}]+)', seg):
-            lst += [seg]
+        if not re.search(rf'([{sentence_sep}]+)', seg):
+            seg_lst = _predict_zh_prosody(frontend, seg, use_pinyin=use_pinyin)
+            lst += seg_lst
         else:
-            lst += _predict_zh_prosody(frontend, seg, use_pinyin=use_pinyin)
+            lst.append(seg)
+
 
     if use_pinyin:
         pinyin_str = ' '.join(lst)
@@ -94,33 +72,95 @@ def _predict_prosody(frontend, text, use_pinyin=False):
     return pinyin_str
 
 
+class Frontend(object):
+    def __init__(
+        self,
+        polyphone_prosody_model: str,
+        pretrain_bert_model: str,
+        # hanzi2pinyin_file: str,
+        # trad2simple_file: str,
+        # polyphone_phone_file: str,
+        # polyphone_character_file: str,
+    ):
+        self.tokenizer = AutoTokenizer.from_pretrained(pretrain_bert_model)
+        self.ppm_sess = ort.InferenceSession(polyphone_prosody_model,
+                                             providers=[
+                                                 # 'TensorrtExecutionProvider',
+                                                 # 'CUDAExecutionProvider',
+                                                 'CPUExecutionProvider'
+                                             ])
+        # self.hanzi2pinyin = Hanzi2Pinyin(hanzi2pinyin_file)
+        # self.tn = Normalizer()
+        # self.t2s = T2S(trad2simple_file)
+        # self.polyphone_phone_dict = []
+        # self.polyphone_character_dict = []
+        # with open(polyphone_phone_file) as pp_f:
+        #     for line in pp_f.readlines():
+        #         self.polyphone_phone_dict.append(line.strip())
+        # with open(polyphone_character_file) as pc_f:
+        #     for line in pc_f.readlines():
+        #         self.polyphone_character_dict.append(line.strip())
+
+    def g2p(self, x):
+        # # traditionl to simple
+        # x = self.t2s.convert(x)
+        # # text normalization
+        # x = self.tn.normalize(x)
+        # # hanzi2pinyin
+        # pinyin = self.hanzi2pinyin.convert(x)
+        # polyphone disambiguation & prosody prediction
+        pinyin = None
+        tokens = self.tokenizer(list(x),
+                           is_split_into_words=True,
+                           return_tensors="np")['input_ids']
+        ort_inputs = {'input': tokens}
+        ort_outs = self.ppm_sess.run(None, ort_inputs)
+        prosody_pred = ort_outs[1].argmax(-1)[0][1:-1]
+        # polyphone_pred = ort_outs[0].argmax(-1)[0][1:-1]
+        # index = 0
+        # for char in x:
+        #     if char in self.polyphone_character_dict:
+        #         pinyin[index] = self.polyphone_phone_dict[polyphone_pred[index]]
+        #     index += 1
+        # return pinyin, prosody_pred
+        return pinyin, prosody_pred, x
+
+
 class ProsodyPredictor:
-	def __init__(self, data_dir='local', model_path='exp/9.onnx'):
-		"""
-		Args:
-			@data_dir: dir to dict files (polyphone/prosody/trad2sim)
-			@model_path: path to bert model, in ONNX format
-		"""
-		self._frontend = _load_frontend_model(data_dir, model_path)
 
-	def predict(self, text: str, use_sp: bool=False):
-		"""
-		Args:
-			@use_sp: with `sp0/sp1` if `use_sp=True`; otherwise `#2/#3` by default.
+    _DEFAULT_CONFIG = {
+        'pretrain_bert_model': '/nfs1/nlp/models/MTBert_v0.0.3',
+        'model_path': '/nfs2/speech/model/tts/frontend/wetts_psp/model/exp_v21/9.onnx',
+    }
 
-		Returns:
-			A string with prosody.
-		
-		i.e.:
-			python _my/prosody_predictor.py predict "$(head -n1 _dump/tmp.txt)"
-		"""
-		hanzi_w_rank = _predict_prosody(self._frontend, text)
-		text = process_text(hanzi_w_rank)
-		if use_sp:
-			return text.replace('#2', 'sp0').replace('#3', 'sp1')
-		return text
+    def __init__(self, config: dict = None):
+        if config:
+            assert isinstance(config, dict), "config type must be dict"
+        else:
+            config = ProsodyPredictor._DEFAULT_CONFIG
+            
+        self.frontend = Frontend(config['model_path'], config['pretrain_bert_model'])
+
+    def predict(self, text: str, use_sp: bool=False, use_postprocess=True) -> str:
+        """
+        摩尔线程真棒 => 摩尔线程 sp0 真棒
+
+        Args:
+            @use_sp: with `sp0/sp1` if `use_sp=True`; otherwise `#2/#3` by default.
+        """
+        # text is hanzi
+        pinyin, prosody, hanzi = self.frontend.g2p(text)
+
+        seg_lst = _add_prosody_into_text(text, prosody)
+        text = ''.join(seg_lst)
+        if use_postprocess:
+            text = rhy_postprocess.process_text(text)
+        if use_sp:
+            text = text.replace('#2', 'sp0').replace('#3', 'sp1')
+        return text
 
 
 if __name__ == '__main__':
 	import fire
 	fire.Fire(ProsodyPredictor)
+
