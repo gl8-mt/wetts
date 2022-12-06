@@ -1,4 +1,5 @@
 import logging
+import re
 
 from transformers import AutoTokenizer
 
@@ -45,11 +46,11 @@ def _predict_zh_prosody(frontend, text, use_pinyin=False):
 
 def _predict_prosody(frontend, text, use_pinyin=False):
 
-    def _split_zsh_sentence(text):
-        sentence_sep = r'\Wa-zA-Z0-9\s'
+    def _split_sentence(text):
         segment_lst = re.sub(rf'([{sentence_sep}]+)', r'_\1_', text).split('_')
         return segment_lst
 
+    sentence_sep = r'\Wa-zA-Z\s'
     segment_lst = _split_sentence(text)
     if len(segment_lst) > 1:
         logging.info('split sentence segment list: %s', segment_lst)
@@ -149,10 +150,13 @@ class ProsodyPredictor:
             @use_sp: with `sp0/sp1` if `use_sp=True`; otherwise `#2/#3` by default.
         """
         # text is hanzi
-        pinyin, prosody, hanzi = self.frontend.g2p(text)
 
-        seg_lst = _add_prosody_into_text(text, prosody)
-        text = ''.join(seg_lst)
+        # pinyin, prosody, hanzi = self.frontend.g2p(text)
+        # seg_lst = _add_prosody_into_text(text, prosody)
+        # text = ''.join(seg_lst)
+
+        text = _predict_prosody(self.frontend, text)
+
         if use_postprocess:
             text = rhy_postprocess.process_text(text)
         if use_sp:
