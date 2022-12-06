@@ -4,10 +4,19 @@ from _my import prosody_predictor as psp
 
 
 @pytest.fixture(scope='module')
-def psp_model():
+def psp_onnx_model():
     config = {
         'pretrain_bert_model': '/nfs1/nlp/models/MTBert_v0.0.3',
         'model_path': '/nfs2/speech/model/tts/frontend/wetts_psp/model/exp_v21/9.onnx',
+    }
+    yield psp.ProsodyPredictor(config=config)
+
+
+@pytest.fixture(scope='module')
+def psp_pt_model():
+    config = {
+        'pretrain_bert_model': '/nfs1/nlp/models/MTBert_v0.0.3',
+        'model_path': '/nfs2/speech/model/tts/frontend/wetts_psp/model/exp_v21/9.pt',
     }
     yield psp.ProsodyPredictor(config=config)
 
@@ -44,6 +53,7 @@ def psp_model():
         False,
     )
 ])
-def test_prosody_predictor(text, expect, use_sp, psp_model):
-    assert psp_model.predict(text, use_sp=use_sp) == expect
+def test_prosody_predictor(text, expect, use_sp, psp_onnx_model, psp_pt_model):
+    assert psp_onnx_model.predict(text, use_sp=use_sp) == expect
+    assert psp_pt_model.predict(text, use_sp=use_sp) == expect
 
