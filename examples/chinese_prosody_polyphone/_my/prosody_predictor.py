@@ -50,8 +50,8 @@ class FrontendModel(nn.Module):
         assert x.size(0) == 1
         x = {
             'input_ids': x,
-            'token_type_ids': torch.zeros(1, x.size(1), dtype=torch.int64),
-            'attention_mask': torch.ones(1, x.size(1), dtype=torch.int64)
+            'token_type_ids': torch.zeros(1, x.size(1), dtype=torch.int64).to(x.device),
+            'attention_mask': torch.ones(1, x.size(1), dtype=torch.int64).to(x.device)
         }
         phone_logits, prosody_logits = self._forward(x)
         phone_pred = F.softmax(phone_logits, dim=-1)
@@ -137,6 +137,7 @@ class FrontendPtRuntime(object):
 
         self.model = model
         self.device = device
+
         self.tokenizer = AutoTokenizer.from_pretrained(pretrain_bert_model)
 
     def run(self, x):
@@ -148,6 +149,7 @@ class FrontendPtRuntime(object):
                              is_split_into_words=True,
                              return_tensors="pt"
                          )['input_ids']
+            inputs = inputs.to(self.device)
             phone_pred, prosody_pred = self.model.export_forward(inputs)
         return phone_pred, prosody_pred
 
@@ -206,6 +208,7 @@ class Frontend(object):
         logging.info(f'use runtime {runtime_cls}')
 
         self.sess = runtime_cls(polyphone_prosody_model, pretrain_bert_model, device='cpu')
+        # self.sess = runtime_cls(polyphone_prosody_model, pretrain_bert_model, device='cuda')
 
         # self.hanzi2pinyin = Hanzi2Pinyin(hanzi2pinyin_file)
         # self.tn = Normalizer()
