@@ -17,15 +17,17 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from transformers import AutoModel
-# from transformers import DebertaV2Model
+from transformers import DebertaV2Model
 from common import BERT_PRETRAIN_MODEL
 
 
 class FrontendModel(nn.Module):
     def __init__(self, num_phones: int, num_prosody: int):
         super(FrontendModel, self).__init__()
-        self.bert = AutoModel.from_pretrained(BERT_PRETRAIN_MODEL)
-        # self.bert = DebertaV2Model.from_pretrained(BERT_PRETRAIN_MODEL)
+        if 'deberta' in BERT_PRETRAIN_MODEL.rsplit('/', 1).lower():
+            self.bert = DebertaV2Model.from_pretrained(BERT_PRETRAIN_MODEL)
+        else:
+            self.bert = AutoModel.from_pretrained(BERT_PRETRAIN_MODEL)
         for param in self.bert.parameters():
             param.requires_grad_(False)
         d_model = self.bert.config.to_dict()['hidden_size']
