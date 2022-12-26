@@ -107,7 +107,7 @@ def train_or_cv(model,
                 loss.backward()
                 optimizer.step()
                 lr_scheduler.step()
-                wandb.watch(model)
+                # wandb.watch(model)
 
 
 def get_args():

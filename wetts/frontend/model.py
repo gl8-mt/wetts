@@ -24,7 +24,7 @@ from common import BERT_PRETRAIN_MODEL
 class FrontendModel(nn.Module):
     def __init__(self, num_phones: int, num_prosody: int):
         super(FrontendModel, self).__init__()
-        if 'deberta' in BERT_PRETRAIN_MODEL.rsplit('/', 1).lower():
+        if 'deberta' in BERT_PRETRAIN_MODEL.rsplit('/', 1)[-1].lower():
             self.bert = DebertaV2Model.from_pretrained(BERT_PRETRAIN_MODEL)
         else:
             self.bert = AutoModel.from_pretrained(BERT_PRETRAIN_MODEL)
