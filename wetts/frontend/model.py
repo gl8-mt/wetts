@@ -27,27 +27,29 @@ class FrontendModel(nn.Module):
         super(FrontendModel, self).__init__()
 
         # config = AutoConfig.from_pretrained(BERT_PRETRAIN_CONFIG)
-        # self.bert = AutoModel.from_config(config)
-        self.bert = AutoModel.from_pretrained(BERT_PRETRAIN_MODEL)
+        # self.encoder = AutoModel.from_config(config)
+        self.encoder = AutoModel.from_pretrained(BERT_PRETRAIN_MODEL)
 
-        for param in self.bert.parameters():
+        for param in self.encoder.parameters():
             param.requires_grad_(False)
-        d_model = self.bert.config.to_dict()['hidden_size']
+        d_model = self.encoder.config.to_dict()['hidden_size']
         expected_dim = (128, 256, 512, 384, 768, 1024)
         assert d_model in expected_dim, f'Expected bert encoder input dim is {expected_dim}, but got {d_model}'
-        self.transform = nn.TransformerEncoderLayer(d_model=d_model,
-                                                    nhead=8,
-                                                    dim_feedforward=2048,
-                                                    batch_first=True)
-        self.phone_classifier = nn.Linear(d_model, num_phones)
+        #  self.transform = nn.TransformerEncoderLayer(d_model=d_model,
+        #                                              nhead=8,
+        #                                              dim_feedforward=2048,
+        #                                              batch_first=True)
+        #  self.phone_classifier = nn.Linear(d_model, num_phones)
         self.prosody_classifier = nn.Linear(d_model, num_prosody)
 
     def _forward(self, x):
         mask = x['attention_mask'] == 0
-        bert_output = self.bert(**x)
-        x = self.transform(bert_output.last_hidden_state,
-                           src_key_padding_mask=mask)
-        phone_pred = self.phone_classifier(x)
+        bert_output = self.encoder(**x)
+        #  x = self.transform(bert_output.last_hidden_state,
+        #                     src_key_padding_mask=mask)
+        #  phone_pred = self.phone_classifier(x)
+        x = bert_output.last_hidden_state
+        phone_pred = None
         prosody_pred = self.prosody_classifier(x)
         return phone_pred, prosody_pred
 
@@ -62,6 +64,9 @@ class FrontendModel(nn.Module):
             'attention_mask': torch.ones(1, x.size(1), dtype=torch.int64)
         }
         phone_logits, prosody_logits = self._forward(x)
-        phone_pred = F.softmax(phone_logits, dim=-1)
+        if phone_logits is None:
+            phone_pred = None
+        else:
+            phone_pred = F.softmax(phone_logits, dim=-1)
         prosody_pred = F.softmax(prosody_logits, dim=-1)
         return phone_pred, prosody_pred

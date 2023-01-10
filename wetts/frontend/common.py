@@ -22,6 +22,7 @@ import logging
 # BERT_PRETRAIN_MODEL = '/nfs1/nlp/models/deberta'
 # BERT_PRETRAIN_MODEL = '/nfs1/nlp/models/deberta-small'
 # BERT_PRETRAIN_MODEL = '/nfs1/nlp/models/deberta-xsmall'
+# BERT_PRETRAIN_MODEL = '/nfs1/nlp/models/bert-base-chinese'
 BERT_PRETRAIN_MODEL = '/nfs1/nlp/models/bert-small'
 
 # BERT_PRETRAIN_MODEL = '/nfs1/nlp/models/bert-base'

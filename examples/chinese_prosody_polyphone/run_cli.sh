@@ -2,7 +2,7 @@
 # Copyright 2022 Binbin Zhang(binbzha@qq.com)
 
 stage=${6--1}
-stop_stage=100
+stop_stage=${7-100}
 url=https://wetts-1256283475.cos.ap-shanghai.myqcloud.com/data/
 
 num_epochs=${1-10}
@@ -62,13 +62,13 @@ fi
 if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
   et=$SECONDS
 
-  # Test polyphone, metric: accuracy
-  python wetts/frontend/test_polyphone.py \
-    --phone_dict data/polyphone/phone2id.txt \
-    --prosody_dict local/prosody2id.txt \
-    --test_data data/polyphone/test.txt \
-    --batch_size 32 \
-    --checkpoint $dir/${num_ckpt}.pt
+  # # Test polyphone, metric: accuracy
+  # python wetts/frontend/test_polyphone.py \
+  #   --phone_dict data/polyphone/phone2id.txt \
+  #   --prosody_dict local/prosody2id.txt \
+  #   --test_data data/polyphone/test.txt \
+  #   --batch_size 32 \
+  #   --checkpoint $dir/${num_ckpt}.pt
 
   # Test prosody, metric: F1-score
   python wetts/frontend/test_prosody.py \
